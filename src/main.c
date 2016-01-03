@@ -17,6 +17,8 @@ void print_grid(int grid[_grid_size][_grid_size]){
     }
     printf("\n");
   }
+  for(col=0;col<_grid_size;col++)
+    printf("*");
 }
 
 /**
@@ -52,6 +54,14 @@ int find_possible_numbers(int grid[_grid_size][_grid_size], int row, int col, in
         possible_numbers[count++]=possible_numbers[r];
     return count;
   }
+}
+
+void cls(){
+  printf("\e[2J\e[H");
+}
+
+void gotoxy(int x,int y){
+  printf("%c[%d;%df",0x1B,y,x);
 }
 
 int main(){
@@ -93,18 +103,35 @@ int main(){
   memset(possible_numbers, 0, _grid_size*_grid_size*_grid_size*sizeof(int));
   /* attempt to find unique possible cell, if not found, use deep first search */
   int n_possible_numbers;
+  memcpy(&grid_solution, &grid, sizeof grid);
+  cls();
+  int i;
   while (!solved){
-    printf(".");
+    //TODO
+    solved=true;
     for(row=0;row<_grid_size;row++)
       for(col=0;col<_grid_size;col++){
-        n_possible_numbers = find_possible_numbers(grid, row, col, possible_numbers[row][col]);
-//        printf("\nn=%d",n_possible_numbers);
-        if(n_possible_numbers==1)
-          grid[row][col]=possible_numbers[row][col][0];
+        n_possible_numbers = find_possible_numbers(grid_solution, row, col, possible_numbers[row][col]);
+        if(n_possible_numbers==1){
+          grid_solution[row][col]=possible_numbers[row][col][0];
+          printf(".");
+        }else if(n_possible_numbers>0){
+          //TODO
+          printf("possible position (%d,%d): ",row,col);
+          for(i=0;i<n_possible_numbers;i++){
+            printf("%d",possible_numbers[row][col][i]);
+          }
+          printf("\n");
+          grid_solution[row][col]=possible_numbers[row][col][0];
+          printf(".");
+        }else{
+          //n==0
+          solved=false;
+        }
       }
-    //TODO
-    solved = true;
-    memcpy(&grid_solution, &grid, sizeof grid);
+    gotoxy(0,0);
+    printf("current grid:\n");
+    print_grid(grid_solution);
   }
   printf("\n");
 
