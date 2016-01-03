@@ -2,9 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 
-const int _grid_size=9;
 const int false=0;
 const int true=1;
+
+const int _sub_grid_size=3;
+const int _grid_size=9;
+const char input_filename[] = "res/input.txt";
+const char output_filename[] = "res/output.txt";
 
 void print_grid(int grid[_grid_size][_grid_size]){
   int row,col;
@@ -19,6 +23,7 @@ void print_grid(int grid[_grid_size][_grid_size]){
   }
   for(col=0;col<_grid_size;col++)
     printf("*");
+  printf("\n");
 }
 
 /**
@@ -35,23 +40,41 @@ int find_possible_numbers(int grid[_grid_size][_grid_size], int row, int col, in
     possible_numbers[0]=grid[row][col];
     return 1;
   }else{
-    int r,c;
-    int cell=grid[row][col];
+    int r,c,num;
     /* init possible number */
-    for(r=0;r<_grid_size;r++)
-      possible_numbers[r]=r+1;
+    for(num=0;num<_grid_size;num++)
+      possible_numbers[num]=num+1;
+//    printf("\npossible_numbers:");
+//    for(num=0;num<_grid_size;num++)
+//        printf("%d",possible_numbers[num]);
+//    printf("\n");
     /* remove impossible number */
-    for(r=0;r<_grid_size;r++)
+    for(num=1;num<=_grid_size;num++)
+      for(r=0;r<_grid_size;r++)
         for(c=0;c<_grid_size;c++){
-          /* if same row or same col, but not same cell */
-          if(r==row ^ c==col && grid[r][c]==cell)
-            possible_numbers[grid[r][c]]=0;
+          /* skip checking itself */
+          if(c==col && r==row) continue;
+          /* if same row or same col */
+          if((r==row || c==col) && grid[r][c]==num)
+            possible_numbers[num-1]=0;
+          /* if in same sub grid */
+          if((r/_sub_grid_size)==(row/_sub_grid_size) && (c/_sub_grid_size)==(col/_sub_grid_size) && grid[r][c]==num)
+            possible_numbers[num-1]=0;
+          //TODO
         }
     /* move non-zero number into header and count number of possible number */
+//    printf("\npossible_numbers:");
+//    for(num=0;num<_grid_size;num++)
+//        printf("%d",possible_numbers[num]);
+//    printf("\n");
     int count=0;
     for(r=0;r<_grid_size;r++)
       if(possible_numbers[r]!=0)
         possible_numbers[count++]=possible_numbers[r];
+//    printf("\npossible_numbers:");
+//    for(num=0;num<_grid_size;num++)
+//        printf("%d",possible_numbers[num]);
+//    printf("\n");
     return count;
   }
 }
@@ -65,10 +88,13 @@ void gotoxy(int x,int y){
 }
 
 int main(){
+  //printf("pre testing:\n");
+  //printf("true ^ true %d\n",true ^ true);
+  //printf("true ^ false %d\n",true ^ false);
+  //printf("false ^ false %d\n",false ^ false);
   printf("program start\n");
 
   printf("Reading from file\n");
-  char input_filename[] = "res/input.txt";
   /* read from file without checking */
   char * line = NULL;
   size_t len = 0;
@@ -91,6 +117,7 @@ int main(){
     }
     row += 1;
   }
+  fclose(input_file);
 
   printf("input grid :\n");
   print_grid(grid);
@@ -106,37 +133,57 @@ int main(){
   memcpy(&grid_solution, &grid, sizeof grid);
   cls();
   int i;
+  int offset=0;
   while (!solved){
     //TODO
     solved=true;
     for(row=0;row<_grid_size;row++)
       for(col=0;col<_grid_size;col++){
+        /* skip non-empty cell */
+        if(grid_solution[row][col]!=0)
+          continue;
         n_possible_numbers = find_possible_numbers(grid_solution, row, col, possible_numbers[row][col]);
         if(n_possible_numbers==1){
           grid_solution[row][col]=possible_numbers[row][col][0];
-          printf(".");
+//          printf(".");
         }else if(n_possible_numbers>0){
           //TODO
-          printf("possible position (%d,%d): ",row,col);
-          for(i=0;i<n_possible_numbers;i++){
-            printf("%d",possible_numbers[row][col][i]);
-          }
-          printf("\n");
-          grid_solution[row][col]=possible_numbers[row][col][0];
-          printf(".");
-        }else{
-          //n==0
           solved=false;
+//          printf("possible position (%d,%d) [%d]: ",row,col,n_possible_numbers);
+//          for(i=0;i<n_possible_numbers;i++){
+//            printf("%d",possible_numbers[row][col][i]);
+//          }
+          grid_solution[row][col]=possible_numbers[row][col][(offset+rand()) % n_possible_numbers];
+//          printf(" --> %d\n",grid_solution[row][col]);
+//          printf(".");
+        }else{
+          /* n==0 */
+//          printf("\nError : there is conflict!");
+          /* reset */
+          //TODO restore to last safe stage (maybe use stack)
+          memcpy(&grid_solution, &grid, sizeof grid);
+          offset++;
+          //exit(EXIT_FAILURE);
         }
       }
     gotoxy(0,0);
-    printf("current grid:\n");
+    printf("\ncurrent grid:\n");
     print_grid(grid_solution);
   }
   printf("\n");
 
   printf("solution found:\n");
   print_grid(grid_solution);
+
+  printf("\nwriting to file:\n");
+  FILE * output_file = fopen(output_filename, "w");
+  for(row=0;row<_grid_size;row++){
+    for(col=0;col<_grid_size;col++){
+      fprintf(output_file,"%d",grid_solution[row][col]);
+    }
+    fprintf(output_file,"\n");
+  }
+  fclose(output_file);
 
   printf("program end\n");
   return(EXIT_SUCCESS);
